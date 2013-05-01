@@ -5,6 +5,7 @@
 #define ECE556_H
 
 #include <stdio.h>
+#include <conio.h>
 
  /**
   * A structure to represent a 3D Point. 
@@ -67,7 +68,8 @@
    int cap ;
    
    int numNets ;	/* number of nets */
-   net *nets ;		/* array of nets */
+   net *nets;		/* array of nets */
+   segment *bEgdes;	/* array of block edges */
    
    int numEdges ; 	/* number of edges of the grid */
    int *edgeCaps; 	/* array of the actual edge capacities after considering for blockages */
@@ -75,6 +77,7 @@
    
   } routingInst ;
   
+
 
 /* int readBenchmark(const char *fileName, routingInst *rst)
    Read in the benchmark file and initialize the routing instance.

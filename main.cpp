@@ -14,10 +14,10 @@
 int main(int argc, char **argv)
 {
 
- 	if(argc!=3){
- 		printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
- 		return 1;
- 	}
+ 	//if(argc!=3){
+ 	//	printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
+ 	//	return 1;
+ 	//}
 
  	int status;
 	char *inputFileName = argv[1];
@@ -30,6 +30,7 @@ int main(int argc, char **argv)
  	status = readBenchmark(inputFileName, rst);
  	if(status==0){
  		printf("ERROR: reading input file \n");
+		getch();
  		return 1;
  	}
 	
@@ -38,6 +39,7 @@ int main(int argc, char **argv)
  	if(status==0){
  		printf("ERROR: running routing \n");
  		release(rst);
+		getch();
  		return 1;
  	}
 	
@@ -46,10 +48,12 @@ int main(int argc, char **argv)
  	if(status==0){
  		printf("ERROR: writing the result \n");
  		release(rst);
+		getch();
  		return 1;
  	}
 
  	release(rst);
  	printf("\nDONE!\n");	
+	getch();
  	return 0;
 }

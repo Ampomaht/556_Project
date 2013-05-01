@@ -66,6 +66,9 @@
   <ItemGroup>
     <ClInclude Include="..\ece556.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\in.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

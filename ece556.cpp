@@ -4,76 +4,100 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <cstring>
 #include <stdlib.h>
+#include <vector>
 
-int readBenchmark(const char *fileName, routingInst *rst){
+using namespace std;
 
-	//Constraings of the Grid Graph	
-	int GridDi_x, GridDi_y;
-	int capacity;
-	int num_nets;
+/*
+	ADDIDITONAL FUCTIONS
+*/
+std::vector<string> &split(const string &s, char delim, vector<string> &elems);
+std::vector<string> split(const string &s, char delim);
 
-	//Net Data
-	char * net_name;
-	int net_pins;
-	int net_x, net_y;
-	int i, j, k;
-
+int readBenchmark(const char *fileName, routingInst *rst)
+{
 	//Blockage updates
 	int blockages;
-	int point1_x, point1_y;
-	int point2_x, point2_y;
 	int new_capacity;
 
 	ifstream myfile;
 	myfile.open(fileName);
 	string line;
-	string buffer;
-	if (!myfile.good()){
-		cout<<"Error: File could not open";
+	std::vector<string> buffer;
+	if (!myfile.good()) {
+		cout << "Error: File could not open";
 		return 0;
 	}
 
 	//Parse Grid Dimensions
-	getline(myfile,line);
-	buffer = strtok(line," ");
-	GridDi_x = atoi(strtok(line," "));
-	GridDi_y = atoi(strtok(line," "));
+	getline(myfile, line);
+	buffer = split(line, ' ');
+	rst->gx = atoi(buffer.at(1).c_str()); 
+	rst->gy = atoi(buffer.at(2).c_str()); 
+
 	//Get Capacity
-	getline(myfile,line);
-	buffer = strtok(line," ");
-	capacity = atoi(strtok(line," "));
+	getline(myfile, line);
+	buffer = split(line, ' ');
+	rst->cap = atoi(buffer.at(1).c_str()); 
+
 	//Get the Num Nets
-	getline(myfile,line);
-	buffer = (strtok(line," "));
-	buffer = (strtok(line," "));
-	num_nets = atoi(strtok(line," "));
+	getline(myfile, line);
+	buffer = split(line, ' ');
+	rst->numNets = atoi(buffer.at(2).c_str()); 
+
 	//Get Nets & Net Data
-	for (i = 0; i < num_nets; i++){
-		getline(myfile,line);
-		net_name = strtok(line," ");
-		net_pins = atoi(strtok(line," "));
-		for (j = 0; j < net_pins; j++){
+	rst->nets = new net[rst->numNets];
+	for (int i = 0; i < rst->numNets; i++) {
+		getline(myfile, line);			// this line is the net's name and number of pins
+		buffer = split(line, ' ');
+		rst->nets[i].id = i;
+		rst->nets[i].numPins = atoi(buffer.at(1).c_str()); 
+		rst->nets[i].pins = new point[rst->nets[i].numPins];
+		for (int j = 0; j < rst->nets[i].numPins; j++){
 			getline(myfile,line);
-			net_x = atoi(strtok(line," "));
-			net_y = atoi(strtok(line," "));
+			buffer = split(line, ' ');
+			rst->nets[i].pins[j].x = atoi(buffer.at(0).c_str());
+			rst->nets[i].pins[j].y = atoi(buffer.at(1).c_str());
 		}
 	}
-	//Get Blockage Data
-	getline(myfile,line);
-	blockages = atoi(line);
-	for (k = 0; k < blockages; k++){
-		getline(myfile,line);
-		point1_x = atoi(strtok(line," "));
-		point1_y = atoi(strtok(line," "));
-		point2_x = atoi(strtok(line," "));
-		point2_y = atoi(strtok(line," "));
-		new_capacity = atoi(strtok(line," "));
+
+	////Get Blockage Data
+	// Probably we need a struct called edge to store the capacity for each edge or sth
+	getline(myfile, line);
+	blockages = atoi(line.c_str());
+	rst->bEgdes = new segment[blockages];
+	for (int i = 0; i < blockages; i++) {
+		getline(myfile, line);
+		buffer = split(line, ' ');
+		rst->bEgdes[i].p1.x = atoi(buffer.at(0).c_str());
+		rst->bEgdes[i].p1.y = atoi(buffer.at(1).c_str());
+		rst->bEgdes[i].p2.x = atoi(buffer.at(2).c_str());
+		rst->bEgdes[i].p2.y = atoi(buffer.at(3).c_str());
+		new_capacity = atoi((buffer.at(4).c_str()));
 	}
 
 
   return 1;
+}
+
+std::vector<string> &split(const string &s, char delim, vector<string> &elems) 
+{
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+std::vector<string> split(const string &s, char delim) 
+{
+    vector<string> elems;
+    split(s, delim, elems);
+    return elems;
 }
 
 int solveRouting(routingInst *rst){

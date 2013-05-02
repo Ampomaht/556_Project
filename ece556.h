@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <conio.h>
+#include <iostream>
 
  /**
   * A structure to represent a 3D Point. 
@@ -17,7 +18,19 @@
 
  } point ;
 
+   /**
+  * A structure to represent an edge
+  */
+ typedef struct
+ {
+   point p1 ; 	
+   point p2 ; 	
+   
+   int cap; 
+   int util;
 
+ } edge ;
+ 
   /**
   * A structure to represent a segment
   */
@@ -69,6 +82,7 @@
    
    int numNets ;	/* number of nets */
    net *nets;		/* array of nets */
+   edge *edges;     /* array of edges */
    segment *bEgdes;	/* array of block edges */
    
    int numEdges ; 	/* number of edges of the grid */

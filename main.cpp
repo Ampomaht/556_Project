@@ -11,13 +11,16 @@
 
 #include "ece556.h"
 
+using namespace std;
+
 int main(int argc, char **argv)
 {
-
  	//if(argc!=3){
  	//	printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
  	//	return 1;
  	//}
+
+	cout << "Program started..." << endl;
 
  	int status;
 	char *inputFileName = argv[1];
@@ -28,7 +31,7 @@ int main(int argc, char **argv)
 	
  	/// read benchmark
  	status = readBenchmark(inputFileName, rst);
- 	if(status==0){
+ 	if (status==0) {
  		printf("ERROR: reading input file \n");
 		getch();
  		return 1;
@@ -36,7 +39,7 @@ int main(int argc, char **argv)
 	
  	/// run actual routing
  	status = solveRouting(rst);
- 	if(status==0){
+ 	if (status==0) {
  		printf("ERROR: running routing \n");
  		release(rst);
 		getch();
@@ -45,7 +48,7 @@ int main(int argc, char **argv)
 	
  	/// write the result
  	status = writeOutput(outputFileName, rst);
- 	if(status==0){
+ 	if (status==0) {
  		printf("ERROR: writing the result \n");
  		release(rst);
 		getch();

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <vector>
 
+
 using namespace std;
 
 /*
@@ -16,6 +17,14 @@ using namespace std;
 */
 std::vector<string> &split(const string &s, char delim, vector<string> &elems);
 std::vector<string> split(const string &s, char delim);
+
+/*
+	ADDIDTIONAL OBJECTS
+*/ 
+
+
+/* Hash map data structure to hold */
+static map<string, edge*> edges;     /* hashmap containing string key to unique edge value */
 
 int readBenchmark(const char *fileName, routingInst *rst)
 {
@@ -42,59 +51,69 @@ int readBenchmark(const char *fileName, routingInst *rst)
 
 	// Initialize edge array
 	int totalNumEdge = rst->gy*(rst->gx - 1) + (rst->gy - 1)*rst->gx;
-	rst->edges = new edge[totalNumEdge];
+	//rst->edges = new edge[totalNumEdge];
 
 	//Get Capacity
 	getline(myfile, line);
 	buffer = split(line, ' ');
 	rst->cap = atoi(buffer.at(1).c_str()); 
 
-	// Initialize edge points
-	// Across edge first
-	for (int i = 0; i < totalNumEdge; i++) {
-		rst->edges[i].cap = rst->cap;
-		rst->edges[i].util = 0;
-	}
-
-		
-
-
+	cout << "Initialing edge map data structure. . ." << endl;
 	// Initialize edge points
 	// vertical first
-	int gx = 0, gy = 0, index = 0;
+	int gx = 0, gy = 0;
+	int i = 0;
 	while(gy < rst->gy) {
+		//cout << "edge no." << i << endl;
+		edge *e = new edge;
+		string key;
 		if (gx != rst->gx - 1) {
-			rst->edges[index].p1.x = gx;
-			rst->edges[index].p1.y = gy;
+			e->p1.x = gx;
+			e->p1.y = gy;
 			gx++;
-			rst->edges[index].p2.x = gx;
-			rst->edges[index].p2.y = gy;
-					cout << rst->edges[index].p1.x << ',' << rst->edges[index].p1.y << ' ';
-		cout << rst->edges[index].p2.x << ',' << rst->edges[index].p2.y << endl;
-			index++;
+			e->p2.x = gx;
+			e->p2.y = gy;
+			e->cap = rst->cap;
+			e->util = 0;
+
+			key = static_cast<ostringstream*>(
+				&(ostringstream() << e->p1.x << e->p1.y << e->p2.x << e->p2.y) )->str();
+			edges[key] = e;
+			key = static_cast<ostringstream*>(
+				&(ostringstream() << e->p2.x << e->p2.y << e->p1.x << e->p1.y) )->str();
+			edges[key] = e;
+
+			//cout << edges[key]->p1.x << ',' << edges[key]->p1.y << ' ';
+			//cout << edges[key]->p2.x << ',' << edges[key]->p2.y << endl;
 		} 
 		else {
 			gx = 0;
 			gy++;
-		}
-
-		
+		}	
+		i++;
 	}
 
-			// Initialize edge points
+	// Initialize edge points
 	// horizontal edges
 	gx = 0, gy = 0;
 	while(gx < rst->gx) {
+		edge *e = new edge;
+		string key;
 		if (gy != rst->gy - 1) {
-			rst->edges[index].p1.x = gx;
-			rst->edges[index].p1.y = gy;
-
+			e->p1.x = gx;
+			e->p1.y = gy;
 			gy++;
-			rst->edges[index].p2.x = gx;
-			rst->edges[index].p2.y = gy;
-					cout << rst->edges[index].p1.x << ',' << rst->edges[index].p1.y << ' ';
-		cout << rst->edges[index].p2.x << ',' << rst->edges[index].p2.y << endl;
-			index++;
+			e->p2.x = gx;
+			e->p2.y = gy;
+		
+			key = static_cast<ostringstream*>(
+				&(ostringstream() << e->p1.x << e->p1.y << e->p2.x << e->p2.y) )->str();
+			edges[key] = e;
+			key = static_cast<ostringstream*>(
+				&(ostringstream() << e->p2.x << e->p2.y << e->p1.x << e->p1.y) )->str();
+			edges[key] = e;
+			//cout << edges[key]->p1.x << ',' << edges[key]->p1.y << ' ';
+			//cout << edges[key]->p2.x << ',' << edges[key]->p2.y << endl;
 		} 
 		else {
 			gy = 0;
@@ -103,7 +122,7 @@ int readBenchmark(const char *fileName, routingInst *rst)
 
 	}
 
-
+	cout << "DONE with edge mapping" << endl;
 
 	//Get the Num Nets
 	getline(myfile, line);
@@ -112,21 +131,28 @@ int readBenchmark(const char *fileName, routingInst *rst)
 
 	//Get Nets & Net Data
 	rst->nets = new net[rst->numNets];
+	
 	for (int i = 0; i < rst->numNets; i++) {
 		getline(myfile, line);			// this line is the net's name and number of pins
 		buffer = split(line, ' ');
 		rst->nets[i].id = i;
 		rst->nets[i].numPins = atoi(buffer.at(1).c_str()); 
-		rst->nets[i].pins = new point[rst->nets[i].numPins];
-		for (int j = 0; j < rst->nets[i].numPins; j++){	// edges
+		rst->nets[i].pins = new pin[rst->nets[i].numPins];
+		
+		for (int j = 0; j < rst->nets[i].numPins; j++){	// pins
+			cout << "Init net " << i << " pin " << j <<  endl;
+			rst->nets[i].pins[j].isConnected = false;
 			getline(myfile,line);
 			buffer = split(line, ' ');
-			rst->nets[i].pins[j].x = atoi(buffer.at(0).c_str());
-			rst->nets[i].pins[j].y = atoi(buffer.at(1).c_str());
+			rst->nets[i].pins[j].loc.x = atoi(buffer.at(0).c_str());
+			rst->nets[i].pins[j].loc.y = atoi(buffer.at(1).c_str());
 		}
 	}
 
-	////Get Blockage Data
+	
+	cout << "DONE with net mapping" << endl;
+
+	//Get Blockage Data
 	getline(myfile, line);
 	blockages = atoi(line.c_str());
 	rst->bEgdes = new segment[blockages];
@@ -166,14 +192,205 @@ std::vector<string> split(const string &s, char delim)
     return elems;
 }
 
-int solveRouting(routingInst *rst){
-  
+int getXDist(point a, point b)  
+{ 
+  int dist = a.x - b.x;
+  return -dist;
 
-  return 1;
 }
 
-int writeOutput(const char *outRouteFile, routingInst *rst){
-  /*********** TO BE FILLED BY YOU **********/
+int getYDist(point a, point b)  
+{ 
+  int dist = a.y - b.y;
+  return -dist;
+}
+
+int getDist(point a, point b)  
+{ 
+	int distX = a.x - b.x;
+  int distY = a.y - b.y;
+  return abs(distX) + abs(distY);
+}
+
+
+
+/**
+* RIP OUT AND REROUTE PROCESS
+**/
+int solveRouting(routingInst *rst)
+{
+	/* Initial Routing */
+	
+	vector<segment> segments;
+
+	for (int i = 0; i < rst->numNets; i++) {
+
+		// Initialize stuff
+		rst->nets[i].numCRoutes = 1; // TODO
+		route *r = new route;
+		r->numSegs = 0;
+		r->weight = 0;
+
+		segments.clear();
+
+		for (int j = 0; j < rst->nets[i].numPins; j++) {
+			
+
+			// if not connected
+				
+			if (!rst->nets[i].pins[j].isConnected) {
+				rst->nets[i].pins[j].isConnected = true;
+				pin thisPin = rst->nets[i].pins[j];
+				pin nextPin = rst->nets[i].pins[j+1];
+
+				// find closest point to route
+				int k, temp, minDist = INT_MAX, minIndex = j+1;
+				if (rst->nets[i].numPins > 2) {
+					for (k = 0; k < rst->nets[i].numPins; k++) {
+						if (k != j) {
+							temp = getDist(thisPin.loc, rst->nets[i].pins[k].loc);
+							if (temp < minDist) {
+								minDist = temp;
+								minIndex = k;
+							}
+						}
+					}
+				}
+				nextPin = rst->nets[i].pins[minIndex];
+
+				// Route horizontally				
+				int distX = getXDist(thisPin.loc, nextPin.loc);
+				segment *seg = new segment;
+				seg->p1 = thisPin.loc;				//define starting point
+				point p;
+				p.x = nextPin.loc.x;
+				p.y = thisPin.loc.y;
+				seg->p2 = p;
+				int index = 0, weight = 0;
+				seg->edges = new edge[abs(distX)];
+				seg->weight = 0;
+				seg->numEdges = 0;
+
+				point currPoint;			// define current starting point of the edge we're working 
+				currPoint = thisPin.loc;
+				while (distX != 0) {
+					string key;
+
+					// move right
+					if (distX > 0) {
+						distX = distX - 1;
+						key = static_cast<ostringstream*>(
+						&(ostringstream() << currPoint.x << currPoint.y << currPoint.x+1 << currPoint.y) )->str();
+						currPoint.x = currPoint.x+1;
+					}
+					// move left
+					else {
+						distX = distX + 1;	
+						key = static_cast<ostringstream*>(
+						&(ostringstream() << currPoint.x << currPoint.y << currPoint.x-1 << currPoint.y) )->str();
+						currPoint.x = currPoint.x-1;
+					}
+					
+					edges[key]->util++;
+					edge *e = edges[key];
+					seg->edges[index] = *e;
+					seg->numEdges++;	
+					weight = edges[key]->util / edges[key]->cap;
+					seg->weight += weight;
+
+					index++;
+				}
+
+				// Check if the end of horizontal segment is the last pin we're looking for
+				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+						rst->nets[i].pins[minIndex].isConnected = true;
+				} 
+
+				r->numSegs++;
+				r->weight += seg->weight;
+				segments.push_back(*seg);
+
+				// route vertically
+				int distY = getYDist(thisPin.loc, nextPin.loc);
+				seg = new segment;
+				p.x = nextPin.loc.x;
+				p.y = thisPin.loc.y;
+				seg->p1 = p;				//define starting point
+				seg->p2 = nextPin.loc;
+				index = 0, weight = 0;
+				seg->edges = new edge[abs(distY)];
+				seg->weight = 0;
+				seg->numEdges = 0;
+				while (distY != 0) {
+					string key;
+					// down
+					if (distY > 0) {
+						distY = distY - 1;
+						key = static_cast<ostringstream*>(
+						&(ostringstream() << currPoint.x << currPoint.y << currPoint.x << currPoint.y+1) )->str();
+						currPoint.y = currPoint.y+1;
+					}
+					// up
+					else {
+						distY = distY + 1;	
+						key = static_cast<ostringstream*>(
+						&(ostringstream() << currPoint.x << currPoint.y << currPoint.x << currPoint.y-1) )->str();
+						currPoint.y = currPoint.y-1;
+					}
+					
+						edges[key]->util++;
+						edge *e = edges[key];
+						seg->edges[index] = *e;
+						seg->numEdges++;
+						weight = edges[key]->util / edges[key]->cap;
+						seg->weight += weight;
+					index++;
+				}
+
+				// Check if the end of vertical segment is the last pin we're looking for
+				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+						rst->nets[i].pins[minIndex].isConnected = true;
+				} 
+
+				r->numSegs++;
+				r->weight += seg->weight;
+				segments.push_back(*seg);
+
+				/* DONE INITIAL ROUTING */
+			}
+
+		}
+					
+		// set up route var
+		int totalSeg = segments.size();
+		r->segments = new segment[totalSeg];
+		for (int i = 0; i < totalSeg; i++) {
+			r->segments[i] = segments.at(i);
+		}
+
+		rst->nets[i].croutes = r;
+	}
+	return 1;
+}
+
+
+
+int writeOutput(const char *outRouteFile, routingInst *rst)
+{
+  cout << "Writing Output to file " << "outRouteFile" << endl;
+  ofstream out;
+  out.open (outRouteFile);
+	for (int i = 0; i < rst->numNets; i++) {
+		out << "n" << rst->nets[i].id << endl;
+		route *croute = rst->nets[i].croutes;
+		for (int j = 0; j < croute->numSegs; j++) {
+			out << "(" << croute->segments[j].p1.x << "," << croute->segments[j].p1.y << ")-(" 
+				<< croute->segments[j].p2.x << "," << croute->segments[j].p2.y << ")" << endl;
+		}
+		out << "!" << endl;
+	}
 
   return 1;
 }

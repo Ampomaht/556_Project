@@ -1,3 +1,16 @@
-﻿  ece556.cpp
+﻿  main.cpp
+c:\users\boat\git\556_project\main.cpp(36): warning C4996: 'getch': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _getch. See online help for details.
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\conio.h(128) : see declaration of 'getch'
+c:\users\boat\git\556_project\main.cpp(45): warning C4996: 'getch': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _getch. See online help for details.
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\conio.h(128) : see declaration of 'getch'
+c:\users\boat\git\556_project\main.cpp(54): warning C4996: 'getch': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _getch. See online help for details.
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\conio.h(128) : see declaration of 'getch'
+c:\users\boat\git\556_project\main.cpp(60): warning C4996: 'getch': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _getch. See online help for details.
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\conio.h(128) : see declaration of 'getch'
+  ece556.cpp
+c:\users\boat\git\556_project\ece556.cpp(373): warning C4258: 'i' : definition from the for loop is ignored; the definition from the enclosing scope is used
+          c:\users\boat\git\556_project\ece556.cpp(369) : definition of 'i' ignored
+          c:\users\boat\git\556_project\ece556.cpp(226) : definition of 'i' used
+  Generating Code...
   LINK : C:\Users\Boat\git\556_Project\Debug\556_Project.exe not found or not built by the last incremental link; performing full link
   556_Project.vcxproj -> C:\Users\Boat\git\556_Project\Debug\556_Project.exe

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <iostream>
+#include <map>
 
  /**
   * A structure to represent a 3D Point. 
@@ -15,8 +16,15 @@
  {
    int x ; /* x coordinate ( >=0 in the routing grid)*/
    int y ; /* y coordinate ( >=0 in the routing grid)*/
-
  } point ;
+
+
+  typedef struct
+ {
+   point loc; /* x coordinate ( >=0 in the routing grid)*/
+   bool isConnected ; /* y coordinate ( >=0 in the routing grid)*/
+
+ } pin ;
 
    /**
   * A structure to represent an edge
@@ -40,7 +48,8 @@
    point p2 ; 	/* end point of a segment */
    
    int numEdges ; 	/* number of edges in the segment*/
-   int *edges ;  	/* array of edges representing the segment*/
+   edge *edges ;  	/* array of edges' keys representing the segment*/
+   int weight ;		
    
  } segment ;
  
@@ -52,6 +61,7 @@
   {
     int numSegs ;  	/* number of segments in a route*/
     segment *segments ;  /* an array of segments (note, a segment may be flat, L-shaped or any other shape, based on your preference */
+	int weight ;  
 
   } route ;
  
@@ -64,9 +74,11 @@
 
    int id ; 		/* ID of the net */
    int numPins ; 	/* number of pins (or terminals) of the net */
-   point *pins ; 	/* array of pins (or terminals) of the net. */
+   pin *pins ; 	/* array of pins (or terminals) of the net. */
+
    int numCRoutes ; 	/* number of (candidate) routes of the net. This may be equal to one (only one candidate route) in your implementation. */
    route *croutes ;	/* array of candidate routes of the net. */
+
 
   } net ;
   
@@ -82,7 +94,6 @@
    
    int numNets ;	/* number of nets */
    net *nets;		/* array of nets */
-   edge *edges;     /* array of edges */
    segment *bEgdes;	/* array of block edges */
    
    int numEdges ; 	/* number of edges of the grid */

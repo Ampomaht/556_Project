@@ -15,10 +15,10 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
- 	//if(argc!=3){
- 	//	printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
- 	//	return 1;
- 	//}
+ 	if(argc!=3){
+ 		printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
+ 		return 1;
+ 	}
 
 	cout << "Program started..." << endl;
 

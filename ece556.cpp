@@ -145,7 +145,7 @@ int readBenchmark(const char *fileName, routingInst *rst)
 			getline(myfile,line);
 			buffer = split(line, ' ');
 			rst->nets[i].pins[j].loc.x = atoi(buffer.at(0).c_str());
-			rst->nets[i].pins[j].loc.y = atoi(buffer.at(1).c_str());
+			rst->nets[i].pins[j].loc.y = atoi(buffer.at(2).c_str());  // SPACE PROBLEM!!!!!
 		}
 	}
 

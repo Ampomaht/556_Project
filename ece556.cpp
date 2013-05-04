@@ -8,7 +8,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <vector>
-
+#include <limits.h>
 
 using namespace std;
 
@@ -226,7 +226,7 @@ int getDist(point a, point b)
 int solveRouting(routingInst *rst)
 {
 	/* Initial Routing */
-	
+	cout << "Perform initial routing. . . Please wait this can take a few mins" << endl;
 	vector<segment> segments;
 
 	for (int i = 0; i < rst->numNets; i++) {
@@ -382,6 +382,8 @@ int solveRouting(routingInst *rst)
 
 		rst->nets[i].croutes = r;
 	}
+
+	cout << "Done with initial routing" << endl;
 	return 1;
 }
 

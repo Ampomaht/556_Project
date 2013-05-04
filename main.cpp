@@ -33,7 +33,7 @@ int main(int argc, char **argv)
  	status = readBenchmark(inputFileName, rst);
  	if (status==0) {
  		printf("ERROR: reading input file \n");
-		getch();
+
  		return 1;
  	}
 	
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
  	if (status==0) {
  		printf("ERROR: running routing \n");
  		release(rst);
-		getch();
+
  		return 1;
  	}
 	
@@ -51,12 +51,12 @@ int main(int argc, char **argv)
  	if (status==0) {
  		printf("ERROR: writing the result \n");
  		release(rst);
-		getch();
+
  		return 1;
  	}
 
  	release(rst);
  	printf("\nDONE!\n");	
-	getch();
+
  	return 0;
 }

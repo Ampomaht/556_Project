@@ -308,10 +308,10 @@ int solveRouting(routingInst *rst)
 				}
 
 				// Check if the end of horizontal segment is the last pin we're looking for
-				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
-					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
-						rst->nets[i].pins[minIndex].isConnected = true;
-				} 
+				//if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+				//	currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+				//		rst->nets[i].pins[minIndex].isConnected = true;
+				//} 
 
 				r->numSegs++;
 				r->weight += seg->weight;

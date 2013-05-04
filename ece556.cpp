@@ -246,24 +246,26 @@ int solveRouting(routingInst *rst)
 			if (!rst->nets[i].pins[j].isConnected) {
 				rst->nets[i].pins[j].isConnected = true;
 				pin thisPin = rst->nets[i].pins[j];
-				pin nextPin = rst->nets[i].pins[j+1];
+				pin nextPin ;
 
 				// find closest point to route
-				int k, temp, minDist = INT_MAX, minIndex = j+1;
+				int k, temp, minDist = INT_MAX, minIndex = j+1 ; // default to next one in line 
 				if (rst->nets[i].numPins > 2) {
 					for (k = 0; k < rst->nets[i].numPins; k++) {
 						if (k != j) {
 							temp = getDist(thisPin.loc, rst->nets[i].pins[k].loc);
-							if (temp < minDist) {
+							if (temp < minDist && rst->nets[i].pins[k].isConnected) {
+								minDist = temp;
+								minIndex = k;
+							} 
+							else if (j == 0 && temp < minDist) {
 								minDist = temp;
 								minIndex = k;
 							}
 						}
 					}
-				}
-				else {
-					break;
-				}
+				} 
+
 				nextPin = rst->nets[i].pins[minIndex];
 
 				// Route horizontally				
@@ -310,10 +312,10 @@ int solveRouting(routingInst *rst)
 				}
 
 				// Check if the end of horizontal segment is the last pin we're looking for
-				//if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
-				//	currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
-				//		rst->nets[i].pins[minIndex].isConnected = true;
-				//} 
+				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+						rst->nets[i].pins[minIndex].isConnected = true;
+				} 
 
 				r->numSegs++;
 				r->weight += seg->weight;
@@ -357,10 +359,10 @@ int solveRouting(routingInst *rst)
 				}
 
 				// Check if the end of vertical segment is the last pin we're looking for
-				//if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
-				//	currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
-				//		rst->nets[i].pins[minIndex].isConnected = true;
-				//} 
+				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+						rst->nets[i].pins[minIndex].isConnected = true;
+				} 
 
 				r->numSegs++;
 				r->weight += seg->weight;

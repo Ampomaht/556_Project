@@ -1,1 +1,6 @@
-﻿  556_Project.vcxproj -> C:\Users\Boat\git\556_Project\Debug\556_Project.exe
+﻿  ece556.cpp
+c:\users\boat\git\556_project\ece556.cpp(381): warning C4258: 'i' : definition from the for loop is ignored; the definition from the enclosing scope is used
+          c:\users\boat\git\556_project\ece556.cpp(377) : definition of 'i' ignored
+          c:\users\boat\git\556_project\ece556.cpp(232) : definition of 'i' used
+  LINK : C:\Users\Boat\git\556_Project\Debug\556_Project.exe not found or not built by the last incremental link; performing full link
+  556_Project.vcxproj -> C:\Users\Boat\git\556_Project\Debug\556_Project.exe

@@ -241,7 +241,6 @@ int solveRouting(routingInst *rst)
 
 		for (int j = 0; j < rst->nets[i].numPins; j++) {
 			
-
 			// if not connected
 				
 			if (!rst->nets[i].pins[j].isConnected) {
@@ -261,6 +260,9 @@ int solveRouting(routingInst *rst)
 							}
 						}
 					}
+				}
+				else {
+					break;
 				}
 				nextPin = rst->nets[i].pins[minIndex];
 
@@ -355,10 +357,10 @@ int solveRouting(routingInst *rst)
 				}
 
 				// Check if the end of vertical segment is the last pin we're looking for
-				if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
-					currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
-						rst->nets[i].pins[minIndex].isConnected = true;
-				} 
+				//if ( currPoint.x == rst->nets[i].pins[minIndex].loc.x && 
+				//	currPoint.y == rst->nets[i].pins[minIndex].loc.y) {
+				//		rst->nets[i].pins[minIndex].isConnected = true;
+				//} 
 
 				r->numSegs++;
 				r->weight += seg->weight;

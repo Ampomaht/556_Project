@@ -45,9 +45,10 @@ int readBenchmark(const char *fileName, routingInst *rst)
 	//Parse Grid Dimensions
 	cout << "Parsing data, creating routing instance" << endl;
 	getline(myfile, line);
-	buffer = split(line, ' ');
-	rst->gx = atoi(buffer.at(1).c_str()); 
-	rst->gy = atoi(buffer.at(2).c_str()); 
+	buffer = split(line, '\t');
+	buffer = split(buffer.at(1), ' ');
+	rst->gx = atoi(buffer.at(0).c_str()); 
+	rst->gy = atoi(buffer.at(1).c_str()); 
 
 	// Initialize edge array
 	int totalNumEdge = rst->gy*(rst->gx - 1) + (rst->gy - 1)*rst->gx;
@@ -55,7 +56,7 @@ int readBenchmark(const char *fileName, routingInst *rst)
 
 	//Get Capacity
 	getline(myfile, line);
-	buffer = split(line, ' ');
+	buffer = split(line, '\t');
 	rst->cap = atoi(buffer.at(1).c_str()); 
 
 	cout << "Initialing edge map data structure. . ." << endl;
@@ -132,6 +133,8 @@ int readBenchmark(const char *fileName, routingInst *rst)
 	//Get Nets & Net Data
 	rst->nets = new net[rst->numNets];
 	
+	cout << "Initializing nets and pins" << endl;
+
 	for (int i = 0; i < rst->numNets; i++) {
 		getline(myfile, line);			// this line is the net's name and number of pins
 		buffer = split(line, ' ');
@@ -140,12 +143,12 @@ int readBenchmark(const char *fileName, routingInst *rst)
 		rst->nets[i].pins = new pin[rst->nets[i].numPins];
 		
 		for (int j = 0; j < rst->nets[i].numPins; j++){	// pins
-			cout << "Init net " << i << " pin " << j <<  endl;
+			//cout << "Init net " << i << " pin " << j <<  endl;
 			rst->nets[i].pins[j].isConnected = false;
 			getline(myfile,line);
-			buffer = split(line, ' ');
+			buffer = split(line, '\t');
 			rst->nets[i].pins[j].loc.x = atoi(buffer.at(0).c_str());
-			rst->nets[i].pins[j].loc.y = atoi(buffer.at(2).c_str());  // SPACE PROBLEM!!!!!
+			rst->nets[i].pins[j].loc.y = atoi(buffer.at(1).c_str());  // SPACE PROBLEM!!!!!
 		}
 	}
 
@@ -156,14 +159,17 @@ int readBenchmark(const char *fileName, routingInst *rst)
 	getline(myfile, line);
 	blockages = atoi(line.c_str());
 	rst->bEgdes = new segment[blockages];
+	vector<string> buffer1, buffer2;
 	for (int i = 0; i < blockages; i++) {
 		getline(myfile, line);
-		buffer = split(line, ' ');
-		rst->bEgdes[i].p1.x = atoi(buffer.at(0).c_str());
-		rst->bEgdes[i].p1.y = atoi(buffer.at(1).c_str());
-		rst->bEgdes[i].p2.x = atoi(buffer.at(2).c_str());
-		rst->bEgdes[i].p2.y = atoi(buffer.at(3).c_str());
-		new_capacity = atoi((buffer.at(4).c_str()));
+		buffer = split(line, '\t');
+		buffer1 = split(buffer.at(0), ' ');
+		buffer2 = split(buffer.at(1), ' ');
+		rst->bEgdes[i].p1.x = atoi(buffer1.at(0).c_str());
+		rst->bEgdes[i].p1.y = atoi(buffer1.at(1).c_str());
+		rst->bEgdes[i].p2.x = atoi(buffer2.at(0).c_str());
+		rst->bEgdes[i].p2.y = atoi(buffer2.at(1).c_str());
+		new_capacity = atoi((buffer2.at(2).c_str()));
 	}
 	cout << "Routing instance created with no errors!\n\n" << 
 		"Grid summary:\nGrid dimension is " << rst->gx << " by " << rst->gy 

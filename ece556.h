@@ -5,7 +5,7 @@
 #define ECE556_H
 
 #include <stdio.h>
-#include <conio.h>
+//#include <conio.h>
 #include <iostream>
 #include <map>
 
@@ -112,7 +112,6 @@
    output: 1 if successful
 */
 int readBenchmark(const char *fileName, routingInst *rst);
-
   
 /* int solveRouting(routingInst *rst)
    This function creates a routing solution

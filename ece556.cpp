@@ -17,11 +17,8 @@ using namespace std;
 */
 std::vector<string> &split(const string &s, char delim, vector<string> &elems);
 std::vector<string> split(const string &s, char delim);
-
-/*
-	ADDIDTIONAL OBJECTS
-*/ 
-
+int initialRoute(routingInst *rst);
+int reroute(routingInst *rst);
 
 /* Hash map data structure to hold */
 static map<string, edge*> edges;     /* hashmap containing string key to unique edge value */
@@ -218,14 +215,11 @@ int getDist(point a, point b)
   return abs(distX) + abs(distY);
 }
 
-
-
 /**
-* RIP OUT AND REROUTE PROCESS
-**/
-int solveRouting(routingInst *rst)
+* Perform initial routing 
+*/
+int initialRoute(routingInst *rst) 
 {
-	/* Initial Routing */
 	cout << "Perform initial routing. . . Please wait this can take a few mins" << endl;
 	vector<segment> segments;
 
@@ -305,7 +299,13 @@ int solveRouting(routingInst *rst)
 					edge *e = edges[key];
 					seg->edges[index] = *e;
 					seg->numEdges++;	
-					weight = edges[key]->util / edges[key]->cap;
+					if (edges[key]->cap == 0) {
+						weight = INT_MAX;
+					}
+					else {
+						weight = edges[key]->util / edges[key]->cap;
+					}
+					
 					seg->weight += weight;
 
 					index++;
@@ -384,6 +384,29 @@ int solveRouting(routingInst *rst)
 	}
 
 	cout << "Done with initial routing" << endl;
+	return 1;
+}
+
+/**
+* Ripup and reroute process
+*/
+int reroute(routingInst *rst) 
+{
+
+	return 1;
+}
+
+/**
+* Solve routing 
+**/
+int solveRouting(routingInst *rst)
+{
+	int status = initialRoute(rst);	// Initial Routing 
+	int iter;		// How many iterations to perform
+	for (iter = 1; iter > 0; iter--) {
+		//reroute(rst);
+	}
+	
 	return 1;
 }
 

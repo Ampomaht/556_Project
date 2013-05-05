@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 
  	release(rst);
  	printf("\nDONE!\n");	
-
+	int x;
+	cin >> x ;
  	return 0;
 }

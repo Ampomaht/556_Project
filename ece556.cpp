@@ -67,7 +67,7 @@ void dequeue(vector<pair<point*, double>>)
 }
 
 /**
-* Get the first element of the queue
+* Get the first element of the queue but it's not out of the queue
 */
 pair<point*, double> extractMin(vector<pair<point*, double>>) 
 {
@@ -121,16 +121,13 @@ void findPathUsingAStar(point s, point t, routingInst *rst)
 	vector<point*> g1, g2, g3;	// g1 = not processed (never in Q), g2 = processing (in Q),
 								// g3 = processed (out of Q)
 	point *v;
-	v->isProcessed = false;
-	v->inQueue = false;
 
 	point *vParent;
 	double vDist = INT_MAX;		// weighted distance from s to v
 	double vScore = INT_MAX;		// score = dist + manhattan_distance(v, t)
 	double sDist = 0;
-	double sScore = 0;
 
-	enqueue( pq, make_pair(&s, sScore) );
+	enqueue( pq, make_pair(&s, 0.0) );	// first enqueue start in the openset
 	while( !pq.empty() ) {
 		pair<point*, double> u = extractMin(pq);
 		u.first->isProcessed = true;

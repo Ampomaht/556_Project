@@ -1,6 +1,42 @@
 ﻿  ece556.cpp
-c:\users\boat\git\556_project\ece556.cpp(383): warning C4258: 'i' : definition from the for loop is ignored; the definition from the enclosing scope is used
-          c:\users\boat\git\556_project\ece556.cpp(379) : definition of 'i' ignored
-          c:\users\boat\git\556_project\ece556.cpp(226) : definition of 'i' used
-  LINK : C:\Users\Boat\git\556_Project\Debug\556_Project.exe not found or not built by the last incremental link; performing full link
-  556_Project.vcxproj -> C:\Users\Boat\git\556_Project\Debug\556_Project.exe
+c:\users\boat\git\556_project\ece556.cpp(545): warning C4258: 'i' : definition from the for loop is ignored; the definition from the enclosing scope is used
+          c:\users\boat\git\556_project\ece556.cpp(541) : definition of 'i' ignored
+          c:\users\boat\git\556_project\ece556.cpp(375) : definition of 'i' used
+c:\users\boat\git\556_project\ece556.cpp(546): warning C4258: 'i' : definition from the for loop is ignored; the definition from the enclosing scope is used
+          c:\users\boat\git\556_project\ece556.cpp(541) : definition of 'i' ignored
+          c:\users\boat\git\556_project\ece556.cpp(375) : definition of 'i' used
+c:\users\boat\git\556_project\ece556.cpp(559): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
+c:\users\boat\git\556_project\ece556.cpp(560): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
+c:\program files (x86)\microsoft visual studio 10.0\vc\include\algorithm(41): error C2678: binary '==' : no operator found which takes a left-hand operand of type 'std::pair<_Ty1,_Ty2>' (or there is no acceptable conversion)
+          with
+          [
+              _Ty1=point *,
+              _Ty2=double
+          ]
+          could be 'built-in C++ operator==(point *, point *)'
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\exception(470): or       'bool std::operator ==(const std::_Exception_ptr &,const std::_Exception_ptr &)'
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\exception(475): or       'bool std::operator ==(std::_Null_type,const std::_Exception_ptr &)'
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\exception(481): or       'bool std::operator ==(const std::_Exception_ptr &,std::_Null_type)'
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\system_error(408): or       'bool std::operator ==(const std::error_code &,const std::error_condition &)'
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\system_error(416): or       'bool std::operator ==(const std::error_condition &,const std::error_code &)'
+          while trying to match the argument list '(std::pair<_Ty1,_Ty2>, point *const )'
+          with
+          [
+              _Ty1=point *,
+              _Ty2=double
+          ]
+          c:\program files (x86)\microsoft visual studio 10.0\vc\include\algorithm(74) : see reference to function template instantiation '_InIt std::_Find<std::pair<_Ty1,_Ty2>*,_Ty>(_InIt,_InIt,const _Ty &)' being compiled
+          with
+          [
+              _InIt=std::pair<point *,double> *,
+              _Ty1=point *,
+              _Ty2=double,
+              _Ty=point *
+          ]
+          c:\users\boat\git\556_project\ece556.cpp(150) : see reference to function template instantiation '_InIt std::find<std::_Vector_iterator<_Myvec>,point*>(_InIt,_InIt,const _Ty &)' being compiled
+          with
+          [
+              _InIt=std::_Vector_iterator<std::_Vector_val<std::pair<point *,double>,std::allocator<std::pair<point *,double>>>>,
+              _Myvec=std::_Vector_val<std::pair<point *,double>,std::allocator<std::pair<point *,double>>>,
+              _Ty=point *
+          ]

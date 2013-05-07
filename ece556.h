@@ -16,6 +16,8 @@
  {
    int x ; /* x coordinate ( >=0 in the routing grid)*/
    int y ; /* y coordinate ( >=0 in the routing grid)*/
+   bool isProcessed ;
+   bool inQueue;
  } point ;
 
 
@@ -36,6 +38,7 @@
    
    int cap; 
    int util;
+   double weight;
 
  } edge ;
  
@@ -49,7 +52,7 @@
    
    int numEdges ; 	/* number of edges in the segment*/
    edge *edges ;  	/* array of edges' keys representing the segment*/
-   int weight ;		
+   double weight ;		
    
  } segment ;
  
@@ -61,7 +64,7 @@
   {
     int numSegs ;  	/* number of segments in a route*/
     segment *segments ;  /* an array of segments (note, a segment may be flat, L-shaped or any other shape, based on your preference */
-	int weight ;  
+	double weight ;  
 
   } route ;
  
@@ -77,7 +80,7 @@
    pin *pins ; 	/* array of pins (or terminals) of the net. */
 
    int numCRoutes ; 	/* number of (candidate) routes of the net. This may be equal to one (only one candidate route) in your implementation. */
-   route *croutes ;	/* array of candidate routes of the net. */
+   route *croutes ;		/* array of candidate routes of the net. */
 
 
   } net ;
@@ -94,11 +97,13 @@
    
    int numNets ;	/* number of nets */
    net *nets;		/* array of nets */
-   segment *bEgdes;	/* array of block edges */
    
    int numEdges ; 	/* number of edges of the grid */
    int *edgeCaps; 	/* array of the actual edge capacities after considering for blockages */
    int *edgeUtils;	/* array of edge utilizations */  
+   
+   int tof ;		/* total overflow */
+   int twl;			/* total wirelength (not used atm) */
    
   } routingInst ;
   

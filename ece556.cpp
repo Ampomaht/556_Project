@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <limits.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -19,15 +20,155 @@ std::vector<string> &split(const string &s, char delim, vector<string> &elems);
 std::vector<string> split(const string &s, char delim);
 int initialRoute(routingInst *rst);
 int reroute(routingInst *rst);
+void findPathUsingAStar(point s, point t, routingInst *rst);
+vector<point*> findAdjacentVertices(point*, int max_x, int max_y);
+int getDist(point a, point b);
+
+// Queue functions
+void enqueue(vector<pair<point*, double>>, pair<point*, double>);
+void dequeue(vector<pair<point*, double>>);
+pair<point*, double> extractMin(vector<pair<point*, double>>);
+
+/*
+ ADDITIONAL OBJECTS
+*/
+vector<net> nets;
+vector<pair<point*, double>> pq;				// priority queue used in A* <point, score(point)> 
+map<point, pair<point, double> > rp;		// storing parents for retracing paths
+const int EDGE_BLOCK_MULTIPLIER = 2;		// used to multiply the edge util to get weight if cap is 0
 
 /* Hash map data structure to hold */
 static map<string, edge*> edges;     /* hashmap containing string key to unique edge value */
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+* Enqueue an item pair of vertex point and its score
+*/
+void enqueue(vector<pair<point*, double>> pq, pair<point*, double> v) 
+{
+	vector<pair<point*, double>>::iterator it_PQ;
+	for (it_PQ = pq.begin(); it_PQ != pq.end(); it_PQ++) {
+		if (v.second <= (*it_PQ).second) {
+			pq.insert(it_PQ, v);
+			break; 
+		} 
+	}
+	if (it_PQ == pq.end()) {
+		pq.insert(it_PQ, v); 
+	}
+}
+
+/**
+* Dequeue an element from the queue
+*/
+void dequeue(vector<pair<point*, double>>) 
+{
+	pq.erase(pq.begin());
+}
+
+/**
+* Get the first element of the queue
+*/
+pair<point*, double> extractMin(vector<pair<point*, double>>) 
+{
+	return pq.front();
+}
+
+/**
+* Returns a vector of adjacent vertices given a point
+*/ 
+vector<point*> findAdjacentVertices(point* p, int max_x, int max_y) 
+{
+	vector<point*> p_adj;
+
+	// check left adj is null
+	if (p->x-1 >= 0) {
+		point *v;
+		v->x = p->x-1;
+		v->y = p->y;
+		p_adj.push_back(v);
+	}
+	// check top adj is null
+	if (p->y-1 >= 0) {
+		point *v;
+		v->x = p->x;
+		v->y = p->y-1;
+		p_adj.push_back(v);
+	}
+	// check right adj is null
+	if (p->x+1 <= max_x-1) {
+		point *v;
+		v->x = p->x+1;
+		v->y = p->y;
+		p_adj.push_back(v);
+	}
+	// check bottom adj is null
+	if (p->y+1 <= max_y-1) {
+		point *v;
+		v->x = p->x;
+		v->y = p->y+1;
+		p_adj.push_back(v);
+	}
+	return p_adj;
+}
+
+/**
+* A* Search Path
+*/
+void findPathUsingAStar(point s, point t, routingInst *rst) 
+{
+	// Initialize variables
+	vector<point*> g1, g2, g3;	// g1 = not processed (never in Q), g2 = processing (in Q),
+								// g3 = processed (out of Q)
+	point *v;
+	v->isProcessed = false;
+	v->inQueue = false;
+
+	point *vParent;
+	double vDist = INT_MAX;		// weighted distance from s to v
+	double vScore = INT_MAX;		// score = dist + manhattan_distance(v, t)
+	double sDist = 0;
+	double sScore = 0;
+
+	enqueue( pq, make_pair(&s, sScore) );
+	while( !pq.empty() ) {
+		pair<point*, double> u = extractMin(pq);
+		u.first->isProcessed = true;
+		if (u.first->x == t.x && u.first->y == t.y) {
+			// retrace(u.first);
+			// return;
+		}
+		vector<point*> u_adj = findAdjacentVertices(u.first, rst->gx, rst->gy);
+		vector<point*>::iterator it_adj;
+		for (it_adj = u_adj.begin(); it_adj != u_adj.end(); it_adj++) {
+			v = (*it_adj);
+			string key = static_cast<ostringstream*>(
+				&(ostringstream() << u.first->x << u.first->y << v->x << v->y) )->str();
+			double temp = 0.0 + edges[key]->weight; // TODO
+			if (v->isProcessed == true && vDist < temp) {
+				continue;
+			}
+			if (find(pq.begin(), pq.end(), v) == pq.end() || vDist > temp) { // TODO
+				vParent = u.first;
+				vDist = temp;
+				vScore = vDist + getDist(*v, t);
+				vector<pair<point*,double>>::iterator iter = find(pq.begin(), pq.end(), v); // TODO 
+				if (iter == pq.end()) {
+					enqueue(pq, make_pair(v, vScore));
+				} 
+				else {
+					(*iter).second = vScore;
+				}
+			}
+			
+		}
+	}
+}
 
 int readBenchmark(const char *fileName, routingInst *rst)
 {
 	//Blockage updates
 	int blockages;
-	int new_capacity;
 
 	cout << "Attempt to read from file" << endl;
 	ifstream myfile;
@@ -73,7 +214,7 @@ int readBenchmark(const char *fileName, routingInst *rst)
 			e->p2.y = gy;
 			e->cap = rst->cap;
 			e->util = 0;
-
+			e->weight = 0.0;
 			key = static_cast<ostringstream*>(
 				&(ostringstream() << e->p1.x << e->p1.y << e->p2.x << e->p2.y) )->str();
 			edges[key] = e;
@@ -103,7 +244,9 @@ int readBenchmark(const char *fileName, routingInst *rst)
 			gy++;
 			e->p2.x = gx;
 			e->p2.y = gy;
-		
+			e->cap = rst->cap;
+			e->util = 0;
+			e->weight = 0.0;
 			key = static_cast<ostringstream*>(
 				&(ostringstream() << e->p1.x << e->p1.y << e->p2.x << e->p2.y) )->str();
 			edges[key] = e;
@@ -147,6 +290,7 @@ int readBenchmark(const char *fileName, routingInst *rst)
 			rst->nets[i].pins[j].loc.x = atoi(buffer.at(0).c_str());
 			rst->nets[i].pins[j].loc.y = atoi(buffer.at(1).c_str());  // SPACE PROBLEM!!!!!
 		}
+		nets.push_back(rst->nets[i]);			// add to net vector
 	}
 
 	
@@ -155,25 +299,31 @@ int readBenchmark(const char *fileName, routingInst *rst)
 	//Get Blockage Data
 	getline(myfile, line);
 	blockages = atoi(line.c_str());
-	rst->bEgdes = new segment[blockages];
 	vector<string> buffer1, buffer2;
+	int x1, y1, x2, y2, bCap;
 	for (int i = 0; i < blockages; i++) {
 		getline(myfile, line);
 		buffer = split(line, '\t');
 		buffer1 = split(buffer.at(0), ' ');
 		buffer2 = split(buffer.at(1), ' ');
-		rst->bEgdes[i].p1.x = atoi(buffer1.at(0).c_str());
-		rst->bEgdes[i].p1.y = atoi(buffer1.at(1).c_str());
-		rst->bEgdes[i].p2.x = atoi(buffer2.at(0).c_str());
-		rst->bEgdes[i].p2.y = atoi(buffer2.at(1).c_str());
-		new_capacity = atoi((buffer2.at(2).c_str()));
+		x1 = atoi(buffer1.at(0).c_str());
+		y1 = atoi(buffer1.at(1).c_str());
+		x2 = atoi(buffer2.at(0).c_str());
+		y2 = atoi(buffer2.at(1).c_str());
+		bCap = atoi((buffer2.at(2).c_str()));
+
+		string key = static_cast<ostringstream*>(
+				&(ostringstream() << x1 << y1 << x2 << y2) )->str();
+		edges[key]->cap = bCap;
 	}
 	cout << "Routing instance created with no errors!\n\n" << 
 		"Grid summary:\nGrid dimension is " << rst->gx << " by " << rst->gy 
 		<< "\nCapacity for normal edge is " << rst->cap 
 		<< "\nTotal number of nets is " << rst->numNets
 		<< "\nTotal number of blockages is " << blockages << endl;
-
+	
+	rst->tof = 0;
+	rst->twl = 0;
 
   return 1;
 }
@@ -220,13 +370,13 @@ int getDist(point a, point b)
 */
 int initialRoute(routingInst *rst) 
 {
-	cout << "Perform initial routing. . . Please wait this can take a few mins" << endl;
+	cout << "\nPerform initial routing. . . Please wait this can take a few mins" << endl;
 	vector<segment> segments;
 
 	for (int i = 0; i < rst->numNets; i++) {
 
 		// Initialize stuff
-		rst->nets[i].numCRoutes = 1; // TODO
+		rst->nets[i].numCRoutes = 1; // for now, number of candidate route is just one
 		route *r = new route;
 		r->numSegs = 0;
 		r->weight = 0;
@@ -270,7 +420,8 @@ int initialRoute(routingInst *rst)
 				p.x = nextPin.loc.x;
 				p.y = thisPin.loc.y;
 				seg->p2 = p;
-				int index = 0, weight = 0;
+				int index = 0;
+				double weight = 0.0;
 				seg->edges = new edge[abs(distX)];
 				seg->weight = 0;
 				seg->numEdges = 0;
@@ -296,18 +447,20 @@ int initialRoute(routingInst *rst)
 					}
 					
 					edges[key]->util++;
-					edge *e = edges[key];
-					seg->edges[index] = *e;
 					seg->numEdges++;	
-					if (edges[key]->cap == 0) {
-						weight = INT_MAX;
+					if (edges[key]->cap == 0) {	// this is a blocked edge with cap = 0, so update total overflow
+						weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
+						rst->tof += 1;								
 					}
 					else {
-						weight = edges[key]->util / edges[key]->cap;
+						weight = (double) edges[key]->util / edges[key]->cap;
+						if (edges[key]->util > edges[key]->cap) {	// this is a blocked edge that is was previously full 
+							rst->tof += 1;
+						}
 					}
-					
+					edges[key]->weight = weight;
+					seg->edges[index] = *edges[key];
 					seg->weight += weight;
-
 					index++;
 				}
 
@@ -328,7 +481,8 @@ int initialRoute(routingInst *rst)
 				p.y = thisPin.loc.y;
 				seg->p1 = p;				//define starting point
 				seg->p2 = nextPin.loc;
-				index = 0, weight = 0;
+				index = 0;
+				weight = 0.0;
 				seg->edges = new edge[abs(distY)];
 				seg->weight = 0;
 				seg->numEdges = 0;
@@ -350,10 +504,19 @@ int initialRoute(routingInst *rst)
 					}
 					
 						edges[key]->util++;
-						edge *e = edges[key];
-						seg->edges[index] = *e;
 						seg->numEdges++;
-						weight = edges[key]->util / edges[key]->cap;
+						if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
+							weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
+							rst->tof += 1; 
+						}
+						else {
+							weight = (double) edges[key]->util / edges[key]->cap;
+							if (edges[key]->util > edges[key]->cap) { // this is a blocked edge that is was previously full
+								rst->tof += 1;
+							}
+						}
+						edges[key]->weight = weight;
+						seg->edges[index] = *edges[key];
 						seg->weight += weight;
 					index++;
 				}
@@ -380,11 +543,23 @@ int initialRoute(routingInst *rst)
 			r->segments[i] = segments.at(i);
 		}
 
-		rst->nets[i].croutes = r;
+		rst->nets[i].croutes = r;	// for now croutes contains only one route
+		nets.at(i).croutes = r;
 	}
 
 	cout << "Done with initial routing" << endl;
+	cout << "Initial total overflow is " << rst->tof << endl;
 	return 1;
+}
+
+/**
+* Compare function used in sort
+*/
+int compare(const net &a, const net &b) 
+{
+	int x = a.croutes->weight;
+	int y = b.croutes->weight;
+	return x > y;
 }
 
 /**
@@ -392,7 +567,50 @@ int initialRoute(routingInst *rst)
 */
 int reroute(routingInst *rst) 
 {
+	/*
+	* ORDER ALL NETS n=1 to numNets based on decreasing values of weights
+	*/
+	cout << "Sorting nets by weights" << endl;
+	sort(nets.begin(), nets.end(), compare);
+	
+	// Route all nets in order, assume n has two terminals
+	for (int n = 0; n < rst->numNets; n++) {
+		cout << "net " << nets.at(n).id << ": " << nets.at(n).croutes->weight << endl;
+		
+		// Rip up net n
+		for (int i = 0; i < nets.at(n).croutes->numSegs; i++) {
+			for (int j = 0; j < nets.at(n).croutes->segments->numEdges; j++) {
 
+				edge e = nets.at(n).croutes->segments[i].edges[j];
+				string key = static_cast<ostringstream*>(
+						&(ostringstream() << e.p1.x << e.p1.y << e.p2.x << e.p2.y) )->str();
+				edges[key]->util--;
+				e.util--;
+				if (e.cap == 0) { // this is a blocked edge of cap = 0
+					rst->tof--;
+					e.weight -= EDGE_BLOCK_MULTIPLIER;
+					edges[key]->weight -= EDGE_BLOCK_MULTIPLIER;
+				}
+				else {
+					if (e.util >= e.cap) { // this is still an edge that is over its capacity
+						rst->tof--;
+					}
+					e.weight -= (double) 1 / rst->cap;
+					edges[key]->weight -= (double) 1 / rst->cap;
+				}
+				
+			}
+			nets.at(n).croutes->segments[i].weight = 0;
+			rst->nets[n].croutes->segments[i].weight = 0;
+		}
+
+		//rst->nets[n].croutes->weight = 0;
+		//nets.at(n).croutes->weight = 0;
+		// Perform A* search path for net n
+		
+	}
+	
+	cout << "Total overflow is " << rst->tof << endl;
 	return 1;
 }
 
@@ -401,10 +619,12 @@ int reroute(routingInst *rst)
 **/
 int solveRouting(routingInst *rst)
 {
-	int status = initialRoute(rst);	// Initial Routing 
+	int status = initialRoute(rst);	// Initial Routing to get net ordering based on weights of routes
 	int iter;		// How many iterations to perform
+	cout << endl;
 	for (iter = 1; iter > 0; iter--) {
-		//reroute(rst);
+		cout << "Perform reroute iteration " << iter << endl;
+		reroute(rst);
 	}
 	
 	return 1;
@@ -414,7 +634,7 @@ int solveRouting(routingInst *rst)
 
 int writeOutput(const char *outRouteFile, routingInst *rst)
 {
-  cout << "Writing Output to file " << "outRouteFile" << endl;
+  cout << "\nWriting Output to file " << "outRouteFile" << endl;
   ofstream out;
   out.open (outRouteFile);
 	for (int i = 0; i < rst->numNets; i++) {

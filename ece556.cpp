@@ -20,37 +20,49 @@ std::vector<string> &split(const string &s, char delim, vector<string> &elems);
 std::vector<string> split(const string &s, char delim);
 int initialRoute(routingInst *rst);
 int reroute(routingInst *rst);
+
 void findPathUsingAStar(point s, point t, routingInst *rst);
-vector<point*> findAdjacentVertices(point*, int max_x, int max_y);
+vector<point> findAdjacentVertices(point, int max_x, int max_y);
 int getDist(point a, point b);
+vector<segment*> retrace(pair<point, double>, point);
 
 // Queue functions
-void enqueue(vector<pair<point*, double>>, pair<point*, double>);
-void dequeue(vector<pair<point*, double>>);
-pair<point*, double> extractMin(vector<pair<point*, double>>);
+void enqueue(pair<point, double>);
+void dequeue();
+pair<point, double> extractMin();
 
 /*
  ADDITIONAL OBJECTS
 */
 vector<net> nets;
-vector<pair<point*, double>> pq;				// priority queue used in A* <point, score(point)> 
+vector<pair<point, double>> pq;				// priority queue used in A* <point, score(point)> 
 map<point, pair<point, double> > rp;		// storing parents for retracing paths
 const int EDGE_BLOCK_MULTIPLIER = 2;		// used to multiply the edge util to get weight if cap is 0
 
 /* Hash map data structure to hold */
 static map<string, edge*> edges;     /* hashmap containing string key to unique edge value */
 
+struct FindFirst {
+    FindFirst(point p) : toFind(p) { }
+    point toFind;
+    bool operator() 
+        ( const std::pair<point, double > &pair ) {
+            return (pair.first.x==toFind.x) && (pair.first.y==toFind.y);
+    }
+};
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
 * Enqueue an item pair of vertex point and its score
 */
-void enqueue(vector<pair<point*, double>> pq, pair<point*, double> v) 
+void enqueue(pair<point, double> v) 
 {
-	vector<pair<point*, double>>::iterator it_PQ;
+	vector<pair<point, double>>::iterator it_PQ;
 	for (it_PQ = pq.begin(); it_PQ != pq.end(); it_PQ++) {
 		if (v.second <= (*it_PQ).second) {
 			pq.insert(it_PQ, v);
-			break; 
+			return;
 		} 
 	}
 	if (it_PQ == pq.end()) {
@@ -61,7 +73,7 @@ void enqueue(vector<pair<point*, double>> pq, pair<point*, double> v)
 /**
 * Dequeue an element from the queue
 */
-void dequeue(vector<pair<point*, double>>) 
+void dequeue() 
 {
 	pq.erase(pq.begin());
 }
@@ -69,7 +81,7 @@ void dequeue(vector<pair<point*, double>>)
 /**
 * Get the first element of the queue but it's not out of the queue
 */
-pair<point*, double> extractMin(vector<pair<point*, double>>) 
+pair<point, double> extractMin() 
 {
 	return pq.front();
 }
@@ -77,39 +89,75 @@ pair<point*, double> extractMin(vector<pair<point*, double>>)
 /**
 * Returns a vector of adjacent vertices given a point
 */ 
-vector<point*> findAdjacentVertices(point* p, int max_x, int max_y) 
+vector<point> findAdjacentVertices(point p, int max_x, int max_y) 
 {
-	vector<point*> p_adj;
+	vector<point> p_adj;
 
 	// check left adj is null
-	if (p->x-1 >= 0) {
-		point *v;
-		v->x = p->x-1;
-		v->y = p->y;
+	if (p.x-1 >= 0) {
+		point v;
+		v.x = p.x-1;
+		v.y = p.y;
 		p_adj.push_back(v);
 	}
 	// check top adj is null
-	if (p->y-1 >= 0) {
-		point *v;
-		v->x = p->x;
-		v->y = p->y-1;
+	if (p.y-1 >= 0) {
+		point v;
+		v.x = p.x;
+		v.y = p.y-1;
 		p_adj.push_back(v);
 	}
 	// check right adj is null
-	if (p->x+1 <= max_x-1) {
-		point *v;
-		v->x = p->x+1;
-		v->y = p->y;
+	if (p.x+1 <= max_x-1) {
+		point v;
+		v.x = p.x+1;
+		v.y = p.y;
 		p_adj.push_back(v);
 	}
 	// check bottom adj is null
-	if (p->y+1 <= max_y-1) {
-		point *v;
-		v->x = p->x;
-		v->y = p->y+1;
+	if (p.y+1 <= max_y-1) {
+		point v;
+		v.x = p.x;
+		v.y = p.y+1;
 		p_adj.push_back(v);
 	}
 	return p_adj;
+}
+
+/**
+* Retrace steps back to src vertex and update edges' utils and weights
+*/
+vector<segment*> retrace(pair<point, double> dst, point src, routingInst *rst)
+{
+	point cur;
+	vector<segment*> path;
+	cur.x = dst.first.x;
+	cur.y = dst.first.y;
+	while (cur.x != src.x && cur.y != src.y) {
+		point next = rp[cur].first;
+		segment *seg = new segment;
+		seg->numEdges = 0;
+		double weight;
+		if (next.y == cur.y && next.x != cur.x) {	// move in along x-direction
+			string key = static_cast<ostringstream*>(
+				&(ostringstream() << cur.x << cur.y << next.x << next.y) )->str();
+			edges[key]->util++;
+			seg->numEdges++;
+			if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
+				weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
+				rst->tof += 1; 
+			}
+			else {
+				weight = (double) edges[key]->util / edges[key]->cap;
+				if (edges[key]->util > edges[key]->cap) { // this is a blocked edge that is was previously full
+					rst->tof += 1;
+				}
+			}
+			edges[key]->weight = weight;
+			seg->edges[index] = *edges[key];
+			seg->weight += weight;
+		}
+	}
 }
 
 /**
@@ -117,48 +165,59 @@ vector<point*> findAdjacentVertices(point* p, int max_x, int max_y)
 */
 void findPathUsingAStar(point s, point t, routingInst *rst) 
 {
+	vector< pair<int,int> > processed;	
+
 	// Initialize variables
-	vector<point*> g1, g2, g3;	// g1 = not processed (never in Q), g2 = processing (in Q),
-								// g3 = processed (out of Q)
-	point *v;
+	point vParent;						// parent of current working vertex
+	double dv = INT_MAX;				// weighted distance from s to v
+	double fv = INT_MAX;			// score = dv + manhattan_distance(v, t)
+	double du = 0.0;				// initially set to 0 distance between start to currPoint
 
-	point *vParent;
-	double vDist = INT_MAX;		// weighted distance from s to v
-	double vScore = INT_MAX;		// score = dist + manhattan_distance(v, t)
-	double sDist = 0;
-
-	enqueue( pq, make_pair(&s, 0.0) );	// first enqueue start in the openset
+	enqueue( make_pair(s, 0.0) );	// first enqueue start in the openset
+	cout << pq.size() << endl;
 	while( !pq.empty() ) {
-		pair<point*, double> u = extractMin(pq);
-		u.first->isProcessed = true;
-		if (u.first->x == t.x && u.first->y == t.y) {
-			// retrace(u.first);
-			// return;
+		pair<point, double> currPoint = extractMin();
+		if (currPoint.first.x == t.x && currPoint.first.y == t.y) { // if reach destination
+			retrace(currPoint, s);
+			return;
 		}
-		vector<point*> u_adj = findAdjacentVertices(u.first, rst->gx, rst->gy);
-		vector<point*>::iterator it_adj;
-		for (it_adj = u_adj.begin(); it_adj != u_adj.end(); it_adj++) {
-			v = (*it_adj);
+		dequeue();
+		processed.push_back(make_pair(currPoint.first.x,currPoint.first.y));
+		vector<point> curr_adj = findAdjacentVertices(currPoint.first, rst->gx, rst->gy);
+		vector<point>::iterator it_adj;
+		for (it_adj = curr_adj.begin(); it_adj != curr_adj.end(); it_adj++) {
+			point v = (*it_adj);
 			string key = static_cast<ostringstream*>(
-				&(ostringstream() << u.first->x << u.first->y << v->x << v->y) )->str();
-			double temp = 0.0 + edges[key]->weight; // TODO
-			if (v->isProcessed == true && vDist < temp) {
-				continue;
+				&(ostringstream() << currPoint.first.x << currPoint.first.y << v.x << v.y) )->str();
+			double temp = du + (double) edges[key]->util + 1 / edges[key]->cap ; 
+
+			vector<pair<int,int>>::iterator it_proc;
+			it_proc = find(processed.begin(), processed.end(), make_pair(v.x,v.y));
+			if (it_proc != processed.end() && dv < temp) { // if this neightbor is already processed
+				// do something
+				cout << "Processed " << endl;
 			}
-			if (find(pq.begin(), pq.end(), v) == pq.end() || vDist > temp) { // TODO
-				vParent = u.first;
-				vDist = temp;
-				vScore = vDist + getDist(*v, t);
-				vector<pair<point*,double>>::iterator iter = find(pq.begin(), pq.end(), v); // TODO 
-				if (iter == pq.end()) {
-					enqueue(pq, make_pair(v, vScore));
+
+			else if (find_if(pq.begin(), pq.end(), FindFirst(v)) == pq.end() || dv > temp) { // if current's neighbor not already inqueue
+				vParent = currPoint.first;
+				dv = temp;
+				fv = dv + getDist(v, t);
+				rp[currPoint.first] = make_pair(vParent, du);
+				vector<pair<point, double>>::iterator iter;
+				iter = find_if(pq.begin(), pq.end(), FindFirst(v));
+				if (iter == pq.end()) {	// if it's not in the queue already
+					enqueue(make_pair(v, fv));
 				} 
 				else {
-					(*iter).second = vScore;
+					// remove the pair, update the score, and reinsert
+					pair<point, double> newPair = make_pair((*iter).first, fv);
+					pq.erase(iter);
+					enqueue(newPair);
 				}
 			}
-			
+			cout << dv << endl;
 		}
+		du = dv;
 	}
 }
 
@@ -389,7 +448,7 @@ int initialRoute(routingInst *rst)
 				pin thisPin = rst->nets[i].pins[j];
 				pin nextPin ;
 
-				// find closest point to route
+				// find closest connected point to route to
 				int k, temp, minDist = INT_MAX, minIndex = j+1 ; // default to next one in line 
 				if (rst->nets[i].numPins > 2) {
 					for (k = 0; k < rst->nets[i].numPins; k++) {
@@ -446,7 +505,7 @@ int initialRoute(routingInst *rst)
 					edges[key]->util++;
 					seg->numEdges++;	
 					if (edges[key]->cap == 0) {	// this is a blocked edge with cap = 0, so update total overflow
-						weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
+						weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
 						rst->tof += 1;								
 					}
 					else {
@@ -503,7 +562,7 @@ int initialRoute(routingInst *rst)
 						edges[key]->util++;
 						seg->numEdges++;
 						if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
-							weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
+							weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
 							rst->tof += 1; 
 						}
 						else {
@@ -570,12 +629,23 @@ int reroute(routingInst *rst)
 	cout << "Sorting nets by weights" << endl;
 	sort(nets.begin(), nets.end(), compare);
 	
-	// Route all nets in order, assume n has two terminals
+	// Route all nets in order of the initial routing, assume n has two terminals
 	for (int n = 0; n < rst->numNets; n++) {
 		cout << "net " << nets.at(n).id << ": " << nets.at(n).croutes->weight << endl;
 		
 		// Rip up net n
 		for (int i = 0; i < nets.at(n).croutes->numSegs; i++) {
+			point s;
+			s.x = 0, s.y = 0;
+			point t;
+			t.x = 0, t.y = 0;
+			if (i%2 == 0) {
+				s = nets.at(n).croutes->segments[i].p1;	
+			}
+			else {
+				t = nets.at(n).croutes->segments[i].p2;
+			}
+			
 			for (int j = 0; j < nets.at(n).croutes->segments->numEdges; j++) {
 
 				edge e = nets.at(n).croutes->segments[i].edges[j];
@@ -599,12 +669,16 @@ int reroute(routingInst *rst)
 			}
 			nets.at(n).croutes->segments[i].weight = 0;
 			rst->nets[n].croutes->segments[i].weight = 0;
+
+			// Perform A* search path for net n
+			if (i%2 != 0) {
+				findPathUsingAStar(s, t, rst) ;
+			}
 		}
 
 		//rst->nets[n].croutes->weight = 0;
 		//nets.at(n).croutes->weight = 0;
-		// Perform A* search path for net n
-		
+
 	}
 	
 	cout << "Total overflow is " << rst->tof << endl;

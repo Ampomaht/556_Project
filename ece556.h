@@ -16,8 +16,7 @@
  {
    int x ; /* x coordinate ( >=0 in the routing grid)*/
    int y ; /* y coordinate ( >=0 in the routing grid)*/
-   bool isProcessed ;
-   bool inQueue;
+
  } point ;
 
 

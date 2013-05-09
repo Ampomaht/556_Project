@@ -16,6 +16,9 @@
  {
    int x ; /* x coordinate ( >=0 in the routing grid)*/
    int y ; /* y coordinate ( >=0 in the routing grid)*/
+   
+   int _x ; /* parent's coordinate */
+   int _y ; /* parent's coordinate */
 
  } point ;
 
@@ -81,6 +84,8 @@
    int numCRoutes ; 	/* number of (candidate) routes of the net. This may be equal to one (only one candidate route) in your implementation. */
    route *croutes ;		/* array of candidate routes of the net. */
 
+   int numPinPts;		/* number of sorted pins after initial routing phase to be used in RRR */
+   point *pinPts;		/* array of sorted pins after initial routing phase to be used in RRR */
 
   } net ;
   

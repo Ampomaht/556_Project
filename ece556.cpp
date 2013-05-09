@@ -21,10 +21,10 @@ std::vector<string> split(const string &s, char delim);
 int initialRoute(routingInst *rst);
 int reroute(routingInst *rst);
 
-void findPathUsingAStar(point s, point t, routingInst *rst);
+vector<segment*> findPathUsingAStar(point s, point t, routingInst *rst, int netNum);
 vector<point> findAdjacentVertices(point, int max_x, int max_y);
 int getDist(point a, point b);
-vector<segment*> retrace(pair<point, double>, point);
+vector<segment*> retrace(point, point, routingInst *rst, int netNum);
 
 // Queue functions
 void enqueue(pair<point, double>);
@@ -36,7 +36,7 @@ pair<point, double> extractMin();
 */
 vector<net> nets;
 vector<pair<point, double>> pq;				// priority queue used in A* <point, score(point)> 
-map<point, pair<point, double> > rp;		// storing parents for retracing paths
+vector< point > rp;		// storing parents for retracing paths
 const int EDGE_BLOCK_MULTIPLIER = 2;		// used to multiply the edge util to get weight if cap is 0
 
 /* Hash map data structure to hold */
@@ -127,20 +127,49 @@ vector<point> findAdjacentVertices(point p, int max_x, int max_y)
 /**
 * Retrace steps back to src vertex and update edges' utils and weights
 */
-vector<segment*> retrace(pair<point, double> dst, point src, routingInst *rst)
+vector<segment*> retrace(point dst, point src, routingInst *rst, int netNum)
 {
 	point cur;
 	vector<segment*> path;
-	cur.x = dst.first.x;
-	cur.y = dst.first.y;
-	while (cur.x != src.x && cur.y != src.y) {
-		point next = rp[cur].first;
-		segment *seg = new segment;
-		seg->numEdges = 0;
-		double weight;
-		if (next.y == cur.y && next.x != cur.x) {	// move in along x-direction
+	vector<edge*> eVec;
+	cur.x = dst.x; cur.y = dst.y; cur._x = dst._x; cur._y = dst._y ;
+	segment *seg;
+	int index = 0;
+	bool x_dir = false;				// checks if this path is in the x direction
+	bool y_dir = false;				// checks if this path is in the y direction
+	int i = rp.size()-1;
+	while (cur.x != src.x || cur.y != src.y) {
+		pair<int,int> next;
+		//next.first = rp.at(i-1).x;
+		//next.second = rp.at(i-1).y;
+		next.first = cur._x; 
+		next.second = cur._y;
+		double weight = 0.0;
+		int edgeIndex = 0;
+		if (next.second == cur.y && next.first != cur.x) {	// move in along x-direction
+					
+			if (!x_dir) {		// not already moving in x-direction
+				edgeIndex = 0;
+				seg = new segment;
+				seg->numEdges = 0;
+				seg->weight = 0;
+				seg->p1 = cur;	// set starting point of segment
+				x_dir = true;
+				y_dir = false;
+				path.push_back(seg);
+				if (index-1 >= 0) {
+					path.at(index-1)->p2 = cur;
+					int eVecSize = eVec.size();
+					path.at(index-1)->edges = new edge[eVecSize];
+					for (int k = 0; k < eVec.size(); k++) {
+						path.at(index-1)->edges[k] = *eVec.at(k);
+					}
+					eVec.clear();
+				}
+				index++;
+			}
 			string key = static_cast<ostringstream*>(
-				&(ostringstream() << cur.x << cur.y << next.x << next.y) )->str();
+				&(ostringstream() << cur.x << cur.y << next.first << next.second) )->str();
 			edges[key]->util++;
 			seg->numEdges++;
 			if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
@@ -154,32 +183,89 @@ vector<segment*> retrace(pair<point, double> dst, point src, routingInst *rst)
 				}
 			}
 			edges[key]->weight = weight;
-			seg->edges[index] = *edges[key];
 			seg->weight += weight;
+			nets.at(netNum).croutes->weight += weight;
+			eVec.push_back(edges[key]);
+			edgeIndex++;
 		}
+		else if (next.second != cur.y && next.first == cur.x) {	// move along y-direction
+
+			if (!y_dir) {		// not already moving in y-direction
+				edgeIndex = 0;
+				seg = new segment;
+				seg->numEdges = 0;
+				seg->weight = 0;
+				seg->p1 = cur;	// set starting point of segment
+				x_dir = false;
+				y_dir = true;
+				path.push_back(seg);
+				if (index-1 >= 0) {
+					path.at(index-1)->p2 = cur;
+					int eVecSize = eVec.size();
+					path.at(index-1)->edges = new edge[eVecSize];
+					for (int k = 0; k < eVec.size(); k++) {
+						path.at(index-1)->edges[k] = *eVec.at(k);
+					}
+					eVec.clear();
+				}
+				index++;
+			}
+			string key = static_cast<ostringstream*>(
+				&(ostringstream() << cur.x << cur.y << next.first << next.second) )->str();
+			edges[key]->util++;
+			seg->numEdges++;
+			if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
+				weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
+				rst->tof += 1; 
+			}
+			else {
+				weight = (double) edges[key]->util / edges[key]->cap;
+				if (edges[key]->util > edges[key]->cap) { // this is a blocked edge that is was previously full
+					rst->tof += 1;
+				}
+			}
+			edges[key]->weight = weight;
+			seg->weight += weight;
+			nets.at(netNum).croutes->weight += weight;
+			eVec.push_back(edges[key]);
+			edgeIndex++;
+		}
+		//point tmp ;
+		//tmp.x = next.first;
+		//tmp.y = next.second;
+		//cur = tmp;
+		cur = rp.at(i-1);
+		i-=1;
 	}
+	path.at(index-1)->p2 = cur;
+
+	// route
+	nets.at(netNum).croutes->numSegs += path.size();
+
+	return path;
 }
 
 /**
 * A* Search Path
 */
-void findPathUsingAStar(point s, point t, routingInst *rst) 
+vector<segment*> findPathUsingAStar(point s, point t, routingInst *rst, int netNum) 
 {
 	vector< pair<int,int> > processed;	
-
+	rp.clear();
+	pq.clear();
 	// Initialize variables
-	point vParent;						// parent of current working vertex
+	///point vParent;						// parent of current working vertex
 	double dv = INT_MAX;				// weighted distance from s to v
 	double fv = INT_MAX;			// score = dv + manhattan_distance(v, t)
 	double du = 0.0;				// initially set to 0 distance between start to currPoint
 
-	enqueue( make_pair(s, 0.0) );	// first enqueue start in the openset
-	cout << pq.size() << endl;
+	enqueue( make_pair(s, getDist(s,t)) );	// first enqueue start in the openset
 	while( !pq.empty() ) {
 		pair<point, double> currPoint = extractMin();
+		rp.push_back(currPoint.first);
+		du = (double) currPoint.second - getDist(currPoint.first,t);
 		if (currPoint.first.x == t.x && currPoint.first.y == t.y) { // if reach destination
-			retrace(currPoint, s);
-			return;
+			return retrace(currPoint.first, s, rst, netNum);
 		}
 		dequeue();
 		processed.push_back(make_pair(currPoint.first.x,currPoint.first.y));
@@ -189,20 +275,25 @@ void findPathUsingAStar(point s, point t, routingInst *rst)
 			point v = (*it_adj);
 			string key = static_cast<ostringstream*>(
 				&(ostringstream() << currPoint.first.x << currPoint.first.y << v.x << v.y) )->str();
-			double temp = du + (double) edges[key]->util + 1 / edges[key]->cap ; 
-
+			
+			double weight = 0.0;
+			if (edges[key]->cap == 0) {	// this is a blocked edge with cap = 0
+				weight = (double) EDGE_BLOCK_MULTIPLIER*(edges[key]->util+1);							
+			}
+			else {
+				weight = (double) edges[key]->util + 1 / edges[key]->cap;		
+			}
+			double temp = du + weight ; 
 			vector<pair<int,int>>::iterator it_proc;
 			it_proc = find(processed.begin(), processed.end(), make_pair(v.x,v.y));
 			if (it_proc != processed.end() && dv < temp) { // if this neightbor is already processed
-				// do something
-				cout << "Processed " << endl;
+
 			}
 
 			else if (find_if(pq.begin(), pq.end(), FindFirst(v)) == pq.end() || dv > temp) { // if current's neighbor not already inqueue
-				vParent = currPoint.first;
 				dv = temp;
 				fv = dv + getDist(v, t);
-				rp[currPoint.first] = make_pair(vParent, du);
+				v._x = currPoint.first.x; v._y = currPoint.first.y;
 				vector<pair<point, double>>::iterator iter;
 				iter = find_if(pq.begin(), pq.end(), FindFirst(v));
 				if (iter == pq.end()) {	// if it's not in the queue already
@@ -215,10 +306,90 @@ void findPathUsingAStar(point s, point t, routingInst *rst)
 					enqueue(newPair);
 				}
 			}
-			cout << dv << endl;
+
 		}
-		du = dv;
 	}
+}
+
+
+/**
+* Compare function used in sort
+*/
+int compare(const net &a, const net &b) 
+{
+	int x = a.croutes->weight;
+	int y = b.croutes->weight;
+	return x > y;
+}
+
+/**
+* Ripup and reroute process
+*/
+int reroute(routingInst *rst) 
+{
+	/*
+	* ORDER ALL NETS n=1 to numNets based on decreasing values of weights
+	*/
+	cout << "Sorting nets by weights" << endl;
+	sort(nets.begin(), nets.end(), compare);
+	
+	// Route all nets in order of the initial routing, assume n has two terminals
+	for (int n = 0; n < rst->numNets; n++) {
+		cout << "net " << nets.at(n).id << ": " << nets.at(n).croutes->weight << endl;
+
+		// Rip up net n
+		for (int i = 0; i < nets.at(n).croutes->numSegs; i++) {
+			
+			for (int j = 0; j < nets.at(n).croutes->segments->numEdges; j++) {
+
+				edge e = nets.at(n).croutes->segments[i].edges[j];
+				string key = static_cast<ostringstream*>(
+						&(ostringstream() << e.p1.x << e.p1.y << e.p2.x << e.p2.y) )->str();
+				edges[key]->util--;
+				e.util--;
+				if (e.cap == 0) { // this is a blocked edge of cap = 0
+					rst->tof--;
+					e.weight -= EDGE_BLOCK_MULTIPLIER;
+					edges[key]->weight -= EDGE_BLOCK_MULTIPLIER;
+				}
+				else {
+					if (e.util >= e.cap) { // this is still an edge that is over its capacity
+						rst->tof--;
+					}
+					e.weight -= (double) 1 / rst->cap;
+					edges[key]->weight -= (double) 1 / rst->cap;
+				}
+				
+			}
+			nets.at(n).croutes->segments[i].weight = 0;
+			rst->nets[n].croutes->segments[i].weight = 0;	
+		}
+
+		//rst->nets[n].croutes->weight = 0;
+		//nets.at(n).croutes->weight = 0;
+
+		// Perform A* search path for net n
+		// set up route var
+		//route *r = new route;
+		//vector<segment*> seg;
+		//seg.clear();
+		nets.at(n).croutes = new route;
+		nets.at(n).croutes->numSegs = 0;
+		nets.at(n).croutes->weight = 0;
+		vector<segment*> seg;
+		for (int i = 0; i < nets.at(n).numPinPts; i+=2) {
+			vector<segment*> tmp = findPathUsingAStar(nets.at(n).pinPts[i], nets.at(n).pinPts[i+1], rst, n) ; 
+			seg.insert(seg.end(), tmp.begin(), tmp.end());
+		}
+		int totalSeg = seg.size();
+		nets.at(n).croutes->segments = new segment[totalSeg];
+		for (int i = 0; i < totalSeg; i++) {
+			nets.at(n).croutes->segments[i] = *seg.at(i);
+		}
+	}
+	
+	cout << "Total overflow is " << rst->tof << endl;
+	return 1;
 }
 
 int readBenchmark(const char *fileName, routingInst *rst)
@@ -428,6 +599,7 @@ int initialRoute(routingInst *rst)
 {
 	cout << "\nPerform initial routing. . . Please wait this can take a few mins" << endl;
 	vector<segment> segments;
+	vector<point> pinPts;
 
 	for (int i = 0; i < rst->numNets; i++) {
 
@@ -436,8 +608,8 @@ int initialRoute(routingInst *rst)
 		route *r = new route;
 		r->numSegs = 0;
 		r->weight = 0;
-
 		segments.clear();
+		pinPts.clear();
 
 		for (int j = 0; j < rst->nets[i].numPins; j++) {
 			
@@ -446,6 +618,7 @@ int initialRoute(routingInst *rst)
 			if (!rst->nets[i].pins[j].isConnected) {
 				rst->nets[i].pins[j].isConnected = true;
 				pin thisPin = rst->nets[i].pins[j];
+				pinPts.push_back(thisPin.loc);
 				pin nextPin ;
 
 				// find closest connected point to route to
@@ -467,6 +640,7 @@ int initialRoute(routingInst *rst)
 				} 
 
 				nextPin = rst->nets[i].pins[minIndex];
+				pinPts.push_back(nextPin.loc);
 
 				// Route horizontally				
 				int distX = getXDist(thisPin.loc, nextPin.loc);
@@ -505,7 +679,7 @@ int initialRoute(routingInst *rst)
 					edges[key]->util++;
 					seg->numEdges++;	
 					if (edges[key]->cap == 0) {	// this is a blocked edge with cap = 0, so update total overflow
-						weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
+						weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
 						rst->tof += 1;								
 					}
 					else {
@@ -562,7 +736,7 @@ int initialRoute(routingInst *rst)
 						edges[key]->util++;
 						seg->numEdges++;
 						if (edges[key]->cap == 0) { // this is a blocked edge with cap = 0, so update total overflow
-							weight = (double) edges[key]->cap*EDGE_BLOCK_MULTIPLIER;
+							weight = (double) edges[key]->util*EDGE_BLOCK_MULTIPLIER;
 							rst->tof += 1; 
 						}
 						else {
@@ -595,93 +769,22 @@ int initialRoute(routingInst *rst)
 		// set up route var
 		int totalSeg = segments.size();
 		r->segments = new segment[totalSeg];
-		for (int i = 0; i < totalSeg; i++) {
-			r->segments[i] = segments.at(i);
+		for (int n = 0; n < totalSeg; n++) {
+			r->segments[n] = segments.at(n);
 		}
 
 		rst->nets[i].croutes = r;	// for now croutes contains only one route
 		nets.at(i).croutes = r;
+
+		nets.at(i).numPinPts = pinPts.size();
+		nets.at(i).pinPts = new point[nets.at(i).numPinPts];
+		for (int n = 0; n < pinPts.size(); n++) {
+			nets.at(i).pinPts[n] = pinPts.at(n);
+		}
 	}
 
 	cout << "Done with initial routing" << endl;
 	cout << "Initial total overflow is " << rst->tof << endl;
-	return 1;
-}
-
-/**
-* Compare function used in sort
-*/
-int compare(const net &a, const net &b) 
-{
-	int x = a.croutes->weight;
-	int y = b.croutes->weight;
-	return x > y;
-}
-
-/**
-* Ripup and reroute process
-*/
-int reroute(routingInst *rst) 
-{
-	/*
-	* ORDER ALL NETS n=1 to numNets based on decreasing values of weights
-	*/
-	cout << "Sorting nets by weights" << endl;
-	sort(nets.begin(), nets.end(), compare);
-	
-	// Route all nets in order of the initial routing, assume n has two terminals
-	for (int n = 0; n < rst->numNets; n++) {
-		cout << "net " << nets.at(n).id << ": " << nets.at(n).croutes->weight << endl;
-		
-		// Rip up net n
-		for (int i = 0; i < nets.at(n).croutes->numSegs; i++) {
-			point s;
-			s.x = 0, s.y = 0;
-			point t;
-			t.x = 0, t.y = 0;
-			if (i%2 == 0) {
-				s = nets.at(n).croutes->segments[i].p1;	
-			}
-			else {
-				t = nets.at(n).croutes->segments[i].p2;
-			}
-			
-			for (int j = 0; j < nets.at(n).croutes->segments->numEdges; j++) {
-
-				edge e = nets.at(n).croutes->segments[i].edges[j];
-				string key = static_cast<ostringstream*>(
-						&(ostringstream() << e.p1.x << e.p1.y << e.p2.x << e.p2.y) )->str();
-				edges[key]->util--;
-				e.util--;
-				if (e.cap == 0) { // this is a blocked edge of cap = 0
-					rst->tof--;
-					e.weight -= EDGE_BLOCK_MULTIPLIER;
-					edges[key]->weight -= EDGE_BLOCK_MULTIPLIER;
-				}
-				else {
-					if (e.util >= e.cap) { // this is still an edge that is over its capacity
-						rst->tof--;
-					}
-					e.weight -= (double) 1 / rst->cap;
-					edges[key]->weight -= (double) 1 / rst->cap;
-				}
-				
-			}
-			nets.at(n).croutes->segments[i].weight = 0;
-			rst->nets[n].croutes->segments[i].weight = 0;
-
-			// Perform A* search path for net n
-			if (i%2 != 0) {
-				findPathUsingAStar(s, t, rst) ;
-			}
-		}
-
-		//rst->nets[n].croutes->weight = 0;
-		//nets.at(n).croutes->weight = 0;
-
-	}
-	
-	cout << "Total overflow is " << rst->tof << endl;
 	return 1;
 }
 
@@ -709,8 +812,8 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
   ofstream out;
   out.open (outRouteFile);
 	for (int i = 0; i < rst->numNets; i++) {
-		out << "n" << rst->nets[i].id << endl;
-		route *croute = rst->nets[i].croutes;
+		out << "n" << nets.at(i).id << endl;
+		route *croute = nets.at(i).croutes;
 		for (int j = 0; j < croute->numSegs; j++) {
 			out << "(" << croute->segments[j].p1.x << "," << croute->segments[j].p1.y << ")-(" 
 				<< croute->segments[j].p2.x << "," << croute->segments[j].p2.y << ")" << endl;
